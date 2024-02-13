@@ -213,3 +213,69 @@ Season
 gg <- grid.arrange(Site, Season, nrow = 1)
 
 ggsave("../Figures/Biplot-genus-counts_v2.png", plot = gg , dpi = 600, units = c("in"), width = 16, height = 8)
+
+
+################Plot the abundance of top 50 OTUs##########
+####################################################
+library("pheatmap")
+select <- order(rowMeans(counts(dds,normalized=TRUE)),
+                decreasing=TRUE)
+df <- as.data.frame(colData(dds)[,c("Site", "Month")]) 
+df <- as.data.frame(rownames(colData))
+DF <- assay(vsd)[select,]
+colnames(DF) <- paste0(colData$Site)
+new_df_order <- DF[,c(1,2,3,10,11,12,19,20,21,28,29,30,37,38,39,46,47,48,
+                          4,5,6,13,14,15,22,23,24,31,32,33,40,41,42,49,50,51,
+                          7,8,9,16,17,18,25,26,27,34,35,36,43,44,45,52,53,54)]
+colData_ordered <- colData[c(1,2,3,10,11,12,19,20,21,28,29,30,37,38,39,46,47,48,
+                             4,5,6,13,14,15,22,23,24,31,32,33,40,41,42,49,50,51,
+                             7,8,9,16,17,18,25,26,27,34,35,36,43,44,45,52,53,54),]
+data.hm <- new_df_order
+dim(data.hm)
+data.phm2 <- data.hm
+colnames(data.phm2) <- colData_ordered$Sample_Season
+data.phm3 <- data.phm2 %>% t() %>% as_tibble() %>%  rownames_to_column()
+data.phm3$type <- colData_ordered$Sample_Season
+data.phm4 <- data.phm3 %>% group_by(type) %>% 
+  dplyr::summarise(across(everything(), mean)) %>% 
+  select(-rowname) %>% t %>% as.data.frame() %>% row_to_names(1) 
+str(data.phm4)
+
+data.phm4[,-13] <- sapply(data.phm4[,-13], as.numeric)
+data.phm5 <- (data.phm4[1:51,-13])
+
+data.phm6 <- data.phm5[order(rownames(data.phm5)), ]
+
+df_hm_s2 <- data.frame(data.phm6)
+df_hm_s2$taxonomy <- rownames(data.phm6)
+df_hm_s2[,-13] <- sapply(df_hm_s2[,-13], as.numeric)
+df_hm_s3 <- (df_hm_s2)
+df_hm_s3$taxonomy <- gsub("Unassigned;", "", df_hm_s3$taxonomy, fixed=TRUE)
+#df_hm_s3$taxonomy <- gsub("d__Archaea;", "", df_hm_s3$taxonomy, fixed=TRUE)
+df_hm_s4 <- separate(df_hm_s3,taxonomy,into = c("Root", "Domain", "Phylum","Class", "Order", "Family", "Genus"),sep = ";",remove = FALSE,extra = "merge")
+df_hm_s4$Phylum <- gsub("unclassified", "Root", df_hm_s4$Phylum , fixed=TRUE)
+df_hm_s4$Genus[is.na(df_hm_s4$Genus)] <- "g__"
+df_hm_s4$Genus <- gsub("Unassigned", "g__", df_hm_s4$Genus , fixed=TRUE)
+df_hm_s4$Genus <- gsub("g__", "", df_hm_s4$Genus , fixed=TRUE)
+df_hm_s4$newtax <- factor(paste0("(",df_hm_s4$Order,")", ";", df_hm_s4$Genus))
+df_hm_s4$newtax<- gsub(" ", "", df_hm_s4$newtax , fixed=TRUE)
+df_hm_s5 <- df_hm_s4[,c(1:12)]
+rownames(df_hm_s5) <- df_hm_s4$newtax
+
+
+p <- pheatmap(df_hm_s5[-51,], cluster_rows=FALSE, show_rownames=TRUE,
+              fontsize_col = 12, show_colnames = TRUE,
+              cluster_cols=FALSE, 
+              annotation_legend = TRUE,
+              legend = FALSE,
+              annotation_names_col = TRUE,
+              gaps_col = c(4,8), angle_col = 90,
+              gaps_row = c(2,3,7,13,14,15,16,17,18,23,26,30,34,42,48,49),
+              cellwidth = 15, cellheight = 13, 
+              #filename = "../Figures/Top50OTUs_Mar23_v1.png",
+              border_color = "black",
+              color = hcl.colors(6, "GnBu"))
+
+p
+
+dev.off()
