@@ -1,13 +1,13 @@
 library(indicspecies)
-
+set.seed(1234)
 #Read the counts table for the grouped dataset
-dataset <- read.delim("../Input_data/new_singlem_table_v1.txt", header = T,check.names = F)
+dataset <- read.csv("../Input_data/singlem_addnames.csv", header = T,check.names = F)
 dataset$OTU_ID <- format(paste0( "OTU", 1:nrow(dataset)))
-wd <- dataset[,-c(1:10, 47:52, 71)]
+wd <- dataset[,-c(1,56)]
 rownames(wd) <- dataset$OTU_ID
 dim(wd)
 data <- wd
-
+str(data)
 data2 <- data[rowSums(data) >=10,]
 ###Load the metadata file
 
@@ -22,8 +22,7 @@ colData <- metadata
 # of the column data (information about samples) are in the same order. 
 # DESeq2 will not make guesses as to which column of the count matrix belongs to 
 # which row of the column data, these must be provided to DESeq2 already in consistent order.
-names(data) = gsub(pattern = "_S.*", replacement = "", x = names(data))
-names(data) = gsub(pattern = "_COM.*", replacement = "", x = names(data))
+
 
 all(rownames(colData) == colnames(data2))
 
@@ -50,13 +49,14 @@ head(assay(vsd))
 dim(vsd)
 vsd_norm <- data.frame(assay(vsd))
 
+set.seed(1)
 df <- cbind(t(vsd_norm),metadata)
-df[,1:2020] <- sapply(df[,1:2020], as.numeric)
+df[,1:1107] <- sapply(df[,1:1107], as.numeric)
 ######Nitrates
 df$N <- ifelse(df$Nitrate <= 0.02, 'Normal', ifelse(df$Nitrate <= 0.2, 'High(10X)', 'Severe(50X)'))
 
 
-indval_analysis_N1 = multipatt(df[,1:2020], df$N, 
+indval_analysis_N1 = multipatt(df[,1:1107], df$N, 
                             func = 'IndVal.g', duleg = TRUE, control=how(nperm=1000))
 
 summary(indval_analysis_N1)
@@ -64,21 +64,23 @@ summary(indval_analysis_N1)
 #Extract data in a table like format
 indval_table_N1 = indval_analysis_N1$sign
 #Significant p value trimming
-indval_table_N2 = indval_table_N1[which(indval_table_N1$p.value <= 0.001),]
+indval_table_N2 = indval_table_N1[which(indval_table_N1$p.value < 0.001),]
+indval_table_N3 <- left_join(indval_table_N2 %>% mutate(OTU_ID = rownames(indval_table_N2)), dataset[,c(1,56)], by=c("OTU_ID"))
+write.csv(indval_table_N3, file="../Output/Indval_analyses_N2_withtax.txt", quote = F)
 #Indval analysis summary
 summary(indval_analysis_N1, indvalcomp = TRUE)
 #RENAME FILE TO SPECIFIC TREATMENT ANALYZED
-capture.output(summary(indval_analysis_N1, indvalcomp = TRUE, alpha = 0.05, At = 0.7, Bt = 0.7), file="../Results/Indval_analyses_N3.csv")
-write.csv(indval_table_N2, file="../Results/Indval_analyses_N2_v3.csv")
+capture.output(summary(indval_analysis_N1, indvalcomp = TRUE, alpha = 0.001, At = 0.7, Bt = 0.7), file="../Output/Indval_analyses_N4.csv")
+write.csv(indval_table_N2, file="../Output/Indval_analyses_N2_v4.csv")
 
 data_N <- data2 %>% filter(rownames(data2) %in% rownames(indval_table_N2))
-write.csv(data_N, file="../Results/Indval_analyses_N_subset1.csv")
+#write.csv(data_N, file="../Output/Indval_analyses_N_subset1.csv")
 
 #########Phosphorus
 df$P <- ifelse(df$Phosphorus <= 0.1, 'Moderately High(3x)', ifelse(df$Phosphorus <= 0.15, 'High(5X)', 'Severe(15X)'))
 
 
-indval_analysis_P1 = multipatt(df[,1:2020], df$P, 
+indval_analysis_P1 = multipatt(df[,1:1107], df$P, 
                                func = 'IndVal.g', duleg = TRUE, control=how(nperm=1000))
 
 summary(indval_analysis_P1)
@@ -86,23 +88,129 @@ summary(indval_analysis_P1)
 #Extract data in a table like format
 indval_table_P1 = indval_analysis_P1$sign
 #Significant p value trimming
-indval_table_P2 = indval_table_P1[which(indval_table_P1$p.value <= 0.01),]
+indval_table_P2 = indval_table_P1[which(indval_table_P1$p.value < 0.05),]
+indval_table_P3 <- left_join(indval_table_P2 %>% mutate(OTU_ID = rownames(indval_table_P2)), dataset[,c(1,56)], by=c("OTU_ID"))
+write.csv(indval_table_P3, file="../Output/Indval_analyses_P2_withtax.txt", quote = F)
 #Indval analysis summary
 summary(indval_analysis_P1, indvalcomp = TRUE)
 #RENAME FILE TO SPECIFIC TREATMENT ANALYZED
-capture.output(summary(indval_analysis_P1, indvalcomp = TRUE, alpha = 0.05, At = 0.7, Bt = 0.7), file="../Results/Indval_analyses_P3.csv")
-write.csv(indval_table_P2, file="../Results/Indval_analyses_P2_v3.csv")
+capture.output(summary(indval_analysis_P1, indvalcomp = TRUE, alpha = 0.05, At = 0.7, Bt = 0.7), file="../Output/Indval_analyses_P4.csv")
+write.csv(indval_table_P2, file="../Output/Indval_analyses_P2_v4.csv")
 
 
 data_P <- data2 %>% filter(rownames(data2) %in% rownames(indval_table_P2))
-write.csv(data_P, file="../Results/Indval_analyses_P_subset1.csv")
+#write.csv(data_P, file="../Output/Indval_analyses_P_subset1.csv")
 
 
 
 
-write.csv(wd, file="../Results/Data_for_ML.csv")
-write.csv(vsd_norm, file="../Results/Data_for_ML_normalized.csv")
+#write.csv(wd, file="../Output/Data_for_ML.csv")
+#write.csv(vsd_norm, file="../Output/Data_for_ML_normalized.csv")
 
+
+################Correlations
+
+#define the columns that contain your abundance data. Change the number after the ":" to subset your data
+select <- order(rowMeans(counts(dds,normalized=TRUE)),
+                decreasing=TRUE)
+DF <- assay(vsd)[select,]
+com = DF
+dim(com)
+
+df = read.delim("../Input_data/metadata.txt", header = T)
+df = df[-c(55:69),]
+dim(df)
+
+library(lubridate)
+res <- hms(df$Daylight.hours)        # format to 'hours:minutes:seconds'
+df$Daylight <- hour(res)*60 + minute(res) + seconds(res)/60
+df$Ammonium[is.na(df$Ammonium)] = 0
+df$Ammonium[is.na(df$Ammonia)] = 0
+df$DOC[is.na(df$DOC)] = 0
+df
+env = df[,c(6,7,9,10,11,13,14,15,16,20,21,24,28)]
+env2 <- env %>% group_by(Sample_Season) %>% 
+  dplyr::summarise(across(everything(), mean)) %>% t %>% data.frame() %>% row_to_names(1)
+dim(env2)
+
+cor_topOTUs <- cbind(t(com), env)
+
+str(cor_topOTUs)
+cor_topOTUs$rowname <- rownames(cor_topOTUs)
+cor_topOTUs[,-c(1108,1121)] <- sapply(cor_topOTUs[,-c(1108,1121)], as.numeric)
+colnames(cor_topOTUs)
+cc = cor(cor_topOTUs[,-c(1108,1121)], method = "spearman", use = "complete.obs")
+dim(cc)
+
+
+rr <- rcorr(cc, type=c("spearman"))
+rr_p <- data.frame(rr$P, check.names = F)
+rrpc <- round(rr_p[-c(1108:1119), 1108:1119], digit = 3)
+rrpc[rrpc < 0.001] <- "*"
+str(rrpc)
+rrpc[rrpc >= 0.001] <- ""
+
+rrpc$OTU_ID <- rownames(rrpc)
+rrpc_02 <- left_join(rrpc, dataset[,c(1,56)],
+                   by = "OTU_ID")
+rrpc_03 <- rrpc %>% filter(rownames(rrpc) %in% rownames(indval_table_P2))
+rownames(rrpc_03) <- rrpc_03$Taxonomy
+rrpc_04 <- rrpc_03[ order(row.names(rrpc_03)), ]
+
+#write.table(rrpc, "../Output/correlations_rrpc_top50_v2.csv", sep = ",", quote = FALSE)
+
+cc_01 <- data.frame(cc[-c(1108:1119),c(1108:1119)])
+dim(cc_01)
+dim(rrpc)
+
+cc_01$OTU_ID <- rownames(cc_01)
+cc_02 <- left_join(cc_01, dataset[,c(1,56)],
+                   by = "OTU_ID")
+
+cc_03 <- cc_02 %>% filter(cc_02$OTU_ID %in% rownames(indval_table_P2))
+rownames(cc_03) <- cc_03$Taxonomy
+cc_04 <- cc_03[ order(row.names(cc_03)), ]
+
+###Phosphorus 
+
+p_corrplot_all <- pheatmap(cc_04[,-c(13:14)], cluster_rows=FALSE, show_rownames= TRUE, 
+                           show_colnames = TRUE, cluster_cols=TRUE, fontsize_col = 12,
+                           annotation_legend = TRUE, fontsize_number = 5,
+                           legend = FALSE,  #annotation_col = annotation_col,
+                           display_numbers = rrpc_04[,-13],  number_color = "white",
+                           gaps_col = c(4,8), angle_col = 90,
+                           #gaps_row = c(2,3,7,13,14,15,16,17,18,23,26,30,34,42,48,49),
+                           cellwidth = 15, cellheight = 15, 
+                           border_color = "black", treeheight_col = 0,
+                           legend_breaks = c(1, 0.4, 0.7, 0, -0.7, -0.4, -1),
+                           #filename = "../Figures/Correlations_nutrients_v1.png",
+                           #color = colorRampPalette((brewer.pal(n =3, name ="RdBu")))(5))
+                           color = c( "#d04d34", "#e59e8c" ,"white", "white", "#a3dc9d", "#448631"))
+
+p_corrplot_all
+
+dev.off()
+
+plot_list=list()
+plot_list[['p']]=p[[4]]
+plot_list[['p_corrplot_all']]= p_corrplot_all[[4]]
+
+p2 <- grid.arrange(grobs=plot_list, nrow = 1, widths=c(4,4))
+
+ggsave("../Figures/FigureS2_v2.png",plot = p2, dpi = 1200, height = 12, width = 11, units = c("in"))
+
+
+
+
+
+
+
+
+
+
+
+
+###############XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX##############################
 #########Temp
 df$Temp <- ifelse(df$Temperature <= 20, 'Low(<20)', ifelse(df$Temperature <= 25, 'Ambient(20-25C)', 'High(25-30C))'))
 
@@ -239,4 +347,37 @@ summary(indval_analysis_Sil1, indvalcomp = TRUE)
 capture.output(summary(indval_analysis_Sil1, indvalcomp = TRUE, alSila = 0.05, At = 0.7, Bt = 0.7), file="../Results/Indval_analyses_T2.csv")
 write.csv(indval_table_Sil2, file="../Results/Indval_analyses_Sil2_v2.csv")
 
+#########################################################################
+
+metadata <- read.delim("../Input_data/metadata_with microgAMBI.txt", header = T)
+
+microgAMBI <- metadata[,c(11,27,13,28,29,30,31)]
+
+microgAMBI$P <- ifelse(microgAMBI$Phosphorus <= 0.1, 'Elevated', ifelse(microgAMBI$Phosphorus <= 0.15, 'High', 'Severe'))
+microgAMBI$N <- ifelse(microgAMBI$Nitrate <= 0.02, 'Normal', ifelse(microgAMBI$Nitrate <= 0.2, 'Elevated', 'High'))
+
+coeff <- 10
+
+microgAMBI.allColor <- "lightblue"
+PhosphorusColor <- "black"
+
+pcm <- melt(microgAMBI)
+m <- # Value used to transform the data
+ggplot(microgAMBI, aes(x=seasongroup, group = 1)) +
+  
+  #geom_line( aes(y=microgAMBI$microgAMBI.all, color = microgAMBI.allColor)) + 
+  geom_col(aes(y=microgAMBI$microgAMBI.all, fill = microgAMBI.allColor)) +
+  geom_line( aes(y=microgAMBI$Phosphorus*coeff, fill = PhosphorusColor)) + # Divide by 10 to get the same range than the temperature
+  geom_hline(yintercept = 0.2, color = "red") +
+  scale_y_continuous(
+    
+    # Features of the first axis
+    name = "First Axis",
+    
+    # Add a second axis and specify its features
+    sec.axis = sec_axis(~.*coeff, name="Second Axis")
+  ) +
+  theme_bw()+
+  theme(axis.text.x = element_text(angle = 90))
+m
 
