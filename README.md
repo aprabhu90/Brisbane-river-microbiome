@@ -1,4 +1,4 @@
-# Metagenomics and machine learning approach 
+![Sites_and_Seasons_v1](https://github.com/aprabhu90/Brisbane-river-microbiome/assets/80237948/401cf078-a1ef-48b2-a2cb-85d49dc5516c)# Metagenomics and machine learning approach 
 
 ## Data interpretation
 
@@ -11,4 +11,6 @@ These R scripts has been designed to :
 
 
 ![pca-ALL](https://github.com/aprabhu90/Brisbane-river-microbiome/assets/80237948/f76cf2ac-b10f-4d29-8646-8b84026595eb)
-![relativeabundance-ALL](file:///C:/Users/uqaprab2/OneDrive%20-%20The%20University%20of%20Queensland/Desktop/RcauseR/Analyses_41_singleM_redo/Figures/Sites_and_Seasons_v1.png)
+
+
+![Uploading Sites_and_Seasons_v1.png…]()
