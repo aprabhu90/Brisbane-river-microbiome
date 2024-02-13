@@ -262,6 +262,157 @@ df_hm_s4$newtax<- gsub(" ", "", df_hm_s4$newtax , fixed=TRUE)
 df_hm_s5 <- df_hm_s4[,c(1:12)]
 rownames(df_hm_s5) <- df_hm_s4$newtax
 
+#########################Plot genus level relative abundance for top 50 OTUs ###########################
+data <- dataset
+data.phm <- data_phm
+data.reordered <- data[order(rowSums(data),decreasing=T),]
+data.ro.50 <- data.reordered[rownames(data_phm),]
+new_df <- data.ro.50[order(row.names(data.ro.50)),]
+#new_df <- new_df[-51,]
+colnames(new_df)
+new_df_o <- new_df[,c(1,2,3,10,11,12,19,20,21,28,29,30,37,38,39,46,47,48,
+                      4,5,6,13,14,15,22,23,24,31,32,33,40,41,42,49,50,51,
+                      7,8,9,16,17,18,25,26,27,34,35,36,43,44,45,52,53,54)]
+colnames(new_df_o) <- colData_ordered$Site
+rownames(new_df_o) <- rownames(data.phm2)
+data.phm3 <- new_df_o %>% t() %>% as_tibble() #%>%  rownames_to_column()
+data.phm3$type <- colData_ordered$Site
+data.phm4 <- data.phm3 %>% group_by(type) %>% 
+  dplyr::summarise(across(everything(), mean)) %>% 
+  #select(-rowname) %>% 
+  t %>% as.data.frame() %>% row_to_names(1) 
+str(data.phm4)
+data.phm4$taxonomy <- rownames(data.phm4)
+data.phm4[,-4] <- sapply(data.phm4[,-4], as.numeric)
+data.phm5 <- (data.phm4[,-4])
+dim(data.phm5)
+
+
+data.phm4$taxonomy <-rownames(data.phm4)
+df_s3 <- (data.phm4)
+df_s4 <- separate(df_s3,taxonomy,into = c("Domain", "Phylum","Class", "Order", "Family", "Genus"),sep = ";",remove = FALSE,extra = "merge")
+df_s4$Genus[is.na(df_s4$Genus)] <- "g__"
+df_s4$newtax <- factor(paste0("(",df_s4$Order,")", " ", df_s4$Genus))
+rownames(df_s4) <- df_s4$newtax
+df_s5 <- df_s4[,1:3]
+
+############Sites##################
+data.m <- as.matrix(df_s5[nrow(df_s5):1,])
+data_percentage <- apply(data.m, 1, function(x){x*100/sum(x,na.rm=T)})
+col <- brewer.pal(3, "Spectral")
+mdat = melt(data_percentage, id.vars=c("BAY", "BR1", "BR2"))
+#measure.vars = rownames(data_percentage))
+mdat.o <- mdat[order(mdat$Var2, decreasing = T),]
+mdat.o$Var2 <- factor(mdat.o$Var2)
+mdat.o$Var1 <- factor(mdat.o$Var1, levels = c("BR2", "BR1", "BAY"))
+
+
+plot_1 = ggplot(mdat.o, aes(x=Var2, y=value, fill=Var1)) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), legend.position = "bottom", legend.text = element_text(size = 12),
+        #axis.text.y = element_text(hjust=0, size = 12), axis.ticks.y = element_blank(),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.title.y = element_blank()) +
+  geom_bar(position = "stack", stat="identity")+
+  geom_text(aes(label = ifelse(value > 2, paste0(format(round(value, digits = 1)),"%" ), " "),
+                hjust = "centre"), 
+            position = position_stack(vjust = 0.5), size = 3)+
+  #geom_col(position = position_stack(reverse = TRUE)) +
+  #scale_fill_brewer(palette ="Blues") +
+  scale_fill_manual(values = c('BAY' = "#BFD3E6FF", 'BR1' =  "#0570B0FF",  'BR2'  = "#08519CFF"),
+                    breaks = c("BR2", "BR1", "BAY"))+
+  ylab("Mean relative proportion of OTUs") + 
+  #xlab("Top50 OTUs") +
+  guides(fill=guide_legend(title="Sites", reverse = TRUE)) + 
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank())+
+  #theme(panel.background = element_rect(fill = "transparent"),
+  #plot.background = element_rect(fill = "transparent",
+  #colour = NA_character_),
+  #legend.background = element_rect(fill = "transparent")) +
+  coord_flip()
+#theme(plot.margin = unit(c(1, 5, 1, 1), "lines"))
+#scale_y_discrete(position = "top")
+plot_1
+
+###############Seasons##################
+colnames(new_df_o) <- colData_ordered$Season
+rownames(new_df_o) <- rownames(data.phm2)
+data.phm3 <- new_df_o %>% t() %>% as_tibble() #%>%  rownames_to_column()
+data.phm3$type <- colData_ordered$Season
+data.phm4 <- data.phm3 %>% group_by(type) %>% 
+  dplyr::summarise(across(everything(), mean)) %>% 
+  #select(-rowname) %>% 
+  t %>% as.data.frame() %>% row_to_names(1) 
+str(data.phm4)
+data.phm4$taxonomy <- rownames(data.phm4)
+data.phm4[,-5] <- sapply(data.phm4[,-5], as.numeric)
+data.phm5 <- (data.phm4[,-5])
+dim(data.phm5)
+
+data.phm5$taxonomy <-rownames(data.phm5)
+df_s3 <- (data.phm5)
+df_s4 <- separate(df_s3,taxonomy,into = c("Domain", "Phylum","Class", "Order", "Family", "Genus"),sep = ";",remove = FALSE,extra = "merge")
+df_s4$Genus[is.na(df_s4$Genus)] <- "g__"
+df_s4$newtax <- factor(paste0("(",df_s4$Order,")", " ", df_s4$Genus))
+rownames(df_s4) <- df_s4$newtax
+df_s5 <- df_s4[,1:4]
+
+data.m <- as.matrix(df_s5[nrow(df_s5):1,])
+data_percentage <- apply(data.m, 1, function(x){x*100/sum(x,na.rm=T)})
+col <- brewer.pal(3, "Spectral")
+
+mdat = melt(data_percentage, id.vars=c("BAY", "BR1", "BR2"))
+mdat.o <- mdat[order(mdat$Var2, decreasing = T),]
+mdat.o$Var2 <- factor(mdat.o$Var2)
+mdat.o$Var1 <- factor(mdat.o$Var1, levels = c("Autumn", "Summer", "Spring", "Winter"))
+
+
+plot_2 = ggplot(mdat.o, aes(x=Var2, y=value, fill=Var1)) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), legend.position = "bottom", legend.text = element_text(size = 12),
+        axis.text.y = element_text(hjust=0, size = 14), axis.ticks.y = element_blank(),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.title.y = element_blank()) +
+  geom_bar(position = "stack", stat="identity")+
+  geom_text(aes(label = ifelse(value > 2, paste0(format(round(value, digits = 1)),"%" ), " "),
+                hjust = "centre"), 
+            position = position_stack(vjust = 0.5), size = 3)+
+  #geom_col(position = position_stack(reverse = TRUE)) +
+  #scale_fill_brewer(palette ="Greens") +
+  scale_fill_manual(values= c('Spring'="#41AE76FF", 'Summer'="#006D2CFF", 'Winter'="#99D8C9FF", 'Autumn' = "#CCECE6FF"),
+                    breaks = c("Autumn", "Summer", "Spring", "Winter"))+
+  ylab("Mean relative proportion of OTUs") + 
+  #xlab("Top50 OTUs") +
+  guides(fill=guide_legend(title="Seasons", reverse = TRUE)) +
+  #theme(panel.background = element_rect(fill = "transparent"),
+  #plot.background = element_rect(fill = "transparent",
+  #colour = NA_character_),
+  #legend.background = element_rect(fill = "transparent")) +
+  coord_flip()+
+  #theme(plot.margin = unit(c(1, 5, 1, 1), "lines"))
+  scale_x_discrete(position = "top")
+plot_2
+
+
+library(cowplot)
+plot3 <- cowplot::plot_grid(plot_1, NULL, plot_2 +
+                              theme(#axis.text.y = element_blank(),
+                                #axis.ticks.y = element_blank(),
+                                #axis.title.y = element_blank()), 
+                              ),
+                            rel_widths = c(1, -0.45, 1),
+                            align = "v", nrow = 1)
+plot3
+
+
+
+
+ggsave("../Figures/Sites_and_Seasons_v1.png", 
+       #bg = "transparent", 
+       plot = plot3, dpi = 1200, height = 13, width = 13, units = c("in"))
 
 p <- pheatmap(df_hm_s5[-51,], cluster_rows=FALSE, show_rownames=TRUE,
               fontsize_col = 12, show_colnames = TRUE,
