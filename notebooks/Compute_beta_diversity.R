@@ -430,3 +430,161 @@ p <- pheatmap(df_hm_s5[-51,], cluster_rows=FALSE, show_rownames=TRUE,
 p
 
 dev.off()
+
+##########################Plot Archaea and Bacteria relative abundance 
+####################Archaea
+data <-wd
+data.reordered <- data[order(rowSums(data),decreasing=T),]
+A.data <- dplyr::filter(data.reordered, grepl('d__Archaea', rownames(data.reordered)))
+dim(A.data)
+A.data$Taxonomy <- rownames(A.data)
+A.o <- data.frame(t(colSums(A.data[10:nrow(A.data), -55])))#/colSums(archaea.data.reordered[,-55]))) 
+A.o$Taxonomy <- "Others"
+A.10 <- A.data[1:10,]
+colnames(A.o) <- colnames(A.10)
+A.m.o <- rbind(A.10, A.o)
+new_df <- A.m.o[,-55]
+colnames(new_df)
+rownames(new_df) <- A.m.o$Taxonomy
+new_df_o <- new_df[,c(1,2,3,10,11,12,19,20,21,28,29,30,37,38,39,46,47,48,
+                      4,5,6,13,14,15,22,23,24,31,32,33,40,41,42,49,50,51,
+                      7,8,9,16,17,18,25,26,27,34,35,36,43,44,45,52,53,54)]
+colnames(new_df_o) <- colData_ordered$Sample_Season
+rownames(new_df_o) <- rownames(new_df)
+data.phm3 <- new_df_o %>% t() %>% as_tibble() %>%  rownames_to_column()
+data.phm3$type <- colData_ordered$Sample_Season
+data.phm4 <- data.phm3 %>% group_by(type) %>% 
+  dplyr::summarise(across(everything(), mean)) %>% 
+  select(-rowname) %>% t %>% as.data.frame() %>% row_to_names(1) 
+str(data.phm4)
+data.phm4$taxonomy <- rownames(data.phm4)
+data.phm4[,-13] <- sapply(data.phm4[,-13], as.numeric)
+data.phm5 <- (data.phm4)
+data.phm5$taxonomy <- gsub("Unassigned;", "", data.phm5$taxonomy, fixed=TRUE)
+data.phm5$taxonomy <- gsub("d__Archaea;", "", data.phm5$taxonomy, fixed=TRUE)
+data.phm6 <- separate(data.phm5,taxonomy,into = c("Domain", "Phylum","Class", "Order", "Family", "Genus"),sep = ";",remove = FALSE,extra = "merge")
+data.phm6$Phylum <- gsub("unclassified", "Root", data.phm6$Phylum , fixed=TRUE)
+data.phm6$Genus[is.na(data.phm6$Genus)] <- "g__"
+data.phm6$Genus <- gsub("Unassigned", "g__", data.phm6$Genus , fixed=TRUE)
+data.phm6$newtax <- factor(paste0("(",data.phm6$Phylum,")", ";", data.phm6$Genus))
+data.phm6$newtax<- gsub(" ", "", data.phm6$newtax , fixed=TRUE)
+data.phm7 <- data.phm6[,c(1:12,20)]
+rownames(data.phm7) <- data.phm7$newtax
+
+data.phm8 <- read.delim("../Results/for_plot_RL.txt", header = T)
+data.phm9 <- data.phm8[,-c(1,14:19)] %>% relocate(Taxa)
+
+A <- data.phm9[c(21:40),]
+B<-data.phm9[c(1:20),]
+A.m <- melt(A)
+colourCount = length(unique(A.m$Taxa))
+getPalette = colorRampPalette(rev(brewer.pal(6, "Spectral")))
+
+
+plot_A1 = ggplot(A.m, aes(x=variable, y=value, fill=Taxa)) +
+  theme_bw()+
+  theme(panel.border = element_blank(),
+        legend.position = "right",
+        axis.text.x = element_text(angle = 45, size = 14, hjust = 1, vjust = 1.5),
+        axis.ticks.x = element_blank(),
+        legend.text = element_text(size=15),
+        panel.background = element_rect(fill = "white",
+                                        colour = NA_character_), # necessary to avoid drawing panel outline
+        panel.grid.major = element_blank(), # get rid of major grid
+        panel.grid.minor = element_blank(), # get rid of minor grid
+        plot.background = element_rect(fill = "white",
+                                       colour = NA_character_))+ # necessary to avoid drawing plot outline
+  #legend.background = element_rect(fill = "transparent"),
+  #legend.box.background = element_rect(fill = "transparent"),
+  #legend.key = element_rect(fill = "transparent"))+
+  #axis.text.x = element_text(size = 10, angle = 90)) +
+  geom_bar(position = "fill", stat="identity", color = "black")+
+  #scale_fill_viridis(option = "turbo", discrete = T) + 
+  paletteer::scale_fill_paletteer_d("pals::tol")+ 
+  ylab("Mean relative proportion of OTUs") + 
+  xlab("BAY") +
+  guides(fill=guide_legend(title="OTUs")) 
+#scale_y_discrete(position = "top")
+plot_A1
+
+ggsave("../Figures/Archaea_v1.png", plot = plot_A1, dpi = 600, units = c("in"), width = 12, height = 10)
+
+
+#################Bacteria############
+data <-wd
+data.reordered <- data[order(rowSums(data),decreasing=T),]
+B.data <- dplyr::filter(data.reordered, grepl('d__Bacteria', rownames(data.reordered)))
+dim(B.data)
+B.data$Taxonomy <- rownames(B.data)
+B.o <- data.frame(t(colSums(B.data[21:nrow(B.data),-55])))#/colSums(archaea.data.reordered[,-55]))) 
+B.o$Taxonomy <- "Others"
+B.20 <- B.data[1:20,]
+colnames(B.o) <- colnames(B.20)
+B.m.o <- rbind(B.20,B.o)
+new_df <- B.m.o[,-55]
+colnames(new_df)
+rownames(new_df) <- B.m.o$Taxonomy
+new_df_o <- new_df[,c(1,2,3,10,11,12,19,20,21,28,29,30,37,38,39,46,47,48,
+                      4,5,6,13,14,15,22,23,24,31,32,33,40,41,42,49,50,51,
+                      7,8,9,16,17,18,25,26,27,34,35,36,43,44,45,52,53,54)]
+colnames(new_df_o) <- colData_ordered$Sample_Season
+rownames(new_df_o) <- rownames(new_df)
+data.phm3 <- new_df_o %>% t() %>% as_tibble() %>%  rownames_to_column()
+data.phm3$type <- colData_ordered$Sample_Season
+data.phm4 <- data.phm3 %>% group_by(type) %>% 
+  dplyr::summarise(across(everything(), mean)) %>% 
+  select(-rowname) %>% t %>% as.data.frame() %>% row_to_names(1) 
+str(data.phm4)
+data.phm4$taxonomy <- rownames(data.phm4)
+data.phm4[,-13] <- sapply(data.phm4[,-13], as.numeric)
+data.phm5 <- (data.phm4)
+data.phm5$taxonomy <- gsub("Unassigned;", "", data.phm5$taxonomy, fixed=TRUE)
+data.phm5$taxonomy <- gsub("d__Bacteria;", "", data.phm5$taxonomy, fixed=TRUE)
+data.phm6 <- separate(data.phm5,taxonomy,into = c("Root", "Phylum","Class", "Order", "Family", "Genus"),sep = ";",remove = FALSE,extra = "merge")
+data.phm6$Phylum <- gsub("Unassigned", "Root", data.phm6$Phylum , fixed=TRUE)
+data.phm6$Genus[is.na(data.phm6$Genus)] <- "g__"
+data.phm6$Genus <- gsub("Unassigned", "g__", data.phm6$Genus , fixed=TRUE)
+data.phm6$Family[is.na(data.phm6$Family)] <- "f__"
+data.phm6$newtax <- factor(paste0("(", data.phm6$Phylum,")", ";", data.phm6$Family, ";", data.phm6$Genus))
+data.phm6$newtax<- gsub(" ", "", data.phm6$newtax , fixed=TRUE)
+data.phm7 <- data.phm6[,c(1:12,20)]
+rownames(data.phm7) <- data.phm7$newtax
+
+B.m <- melt(data.phm7)
+colourCount = length(unique(B.m$newtax))
+getPalette = colorRampPalette(rev(brewer.pal(6, "Spectral")))
+
+plot_B = ggplot(B.m, aes(x=variable, y=value, fill=newtax)) +
+  theme_bw()+
+  theme(panel.border = element_blank(),
+        legend.position = "right",
+        axis.text.x = element_text(angle = 45, size = 14, hjust = 1, vjust = 1.5),
+        axis.ticks.x = element_blank(),
+        legend.text = element_text(size=15),
+        panel.background = element_rect(fill = "white",
+                                        colour = NA_character_), # necessary to avoid drawing panel outline
+        panel.grid.major = element_blank(), # get rid of major grid
+        panel.grid.minor = element_blank(), # get rid of minor grid
+        plot.background = element_rect(fill = "white",
+                                       colour = NA_character_))+ # necessary to avoid drawing plot outline
+  #legend.background = element_rect(fill = "transparent"),
+  #legend.box.background = element_rect(fill = "transparent"),
+  #legend.key = element_rect(fill = "transparent"))+
+  #axis.text.x = element_text(size = 10, angle = 90)) +
+  geom_bar(position = "fill", stat="identity", color = "black")+
+  #scale_fill_viridis(option = "turbo", discrete = T) + 
+  paletteer::scale_fill_paletteer_d("pals::stepped")+ 
+  ylab("Mean relative proportion of OTUs") + 
+  xlab("BAY") +
+  guides(fill=guide_legend(title="OTUs", ncol = 1)) 
+#scale_y_discrete(position = "top")
+plot_B
+
+ggsave("../Figures/Bacteria_v1.png", plot = plot_B, dpi = 600, units = c("in"), width = 12, height = 10)
+
+
+##############################################################
+plotAB <- ggpubr::ggarrange(plot_A1, plot_B, heights = c(3, 4), nrow = 1, align = "v")
+plotAB
+
+ggsave("../Figures/AB_v1.png", plot = plotAB, dpi = 600, units = c("in"), width = 25, height = 10)
