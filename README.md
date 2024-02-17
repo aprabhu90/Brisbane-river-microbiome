@@ -2,7 +2,7 @@
 
 
 These R scripts has been designed to :
-1. Compute alpha and beta diversity of microbial communities, and correlate with ephysico-chemical parameters
+1. Compute alpha and beta diversity of microbial communities, and correlate with physico-chemical parameters
 2. Evaluate functions of the community
 3. Identify indicator taxa for nitrates and total phosphorus concentrations
 
