@@ -6,7 +6,7 @@ These R scripts has been designed to :
 2. Evaluate functions of the community
 3. Identify indicator taxa for nitrates and total phosphorus concentrations
 
-Please cite the paper : (Will update soon)
+Please cite the paper : Apoorva Prabhu, Sanjana Tule, Maria Chuvochina, Mikael Bodén, Simon J McIlroy, Julian Zaugg, Christian Rinke, Machine learning and metagenomics identifies uncharacterized taxa inferred to drive biogeochemical cycles in a subtropical hypereutrophic estuary, ISME Communications, Volume 4, Issue 1, January 2024, ycae067, https://doi.org/10.1093/ismeco/ycae067
 
 ## Brisbane river pelagic microbiome show spatio - temporal variation
 
